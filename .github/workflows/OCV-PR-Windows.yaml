@@ -119,13 +119,14 @@ jobs:
 
 
     - name: Checkout and merge OpenCV
-      uses: ./checkout-and-merge
-      with:
-        target_branch: '${{ matrix.branch }}'
-        author: '${{ github.event.pull_request.user.login }}'
-        source_branch: "4.x"
-        gitcache: '${{ env.GIT_CACHE }}'
-        workdir: '${{ github.workspace }}'
+      run: |
+        echo "::group::Clone OpenCV"
+        rm -rf opencv
+        git clone --single-branch --branch 4.x https://github.com/opencv/opencv.git
+        cd opencv
+        git config user.email "opencv.ci"
+        git config user.name "opencv.ci"
+        echo "::endgroup::"
 
     - name: Update extra dnn models
       timeout-minutes: 60
