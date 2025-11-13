@@ -1,9 +1,9 @@
 name: OCV PR Windows
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - dummy_arm_ci
     paths:
       - '.github/workflows/OCV-PR-Windows.yaml'
       # TODO: are following paths necessary?
@@ -128,7 +128,6 @@ jobs:
         workdir: '${{ github.workspace }}'
 
     - name: Update extra dnn models
-      if: ${{ matrix.arch != 'arm64' }}
       timeout-minutes: 60
       working-directory: '${{ github.workspace }}'
       run: |
