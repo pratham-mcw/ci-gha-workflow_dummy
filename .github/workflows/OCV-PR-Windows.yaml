@@ -118,6 +118,8 @@ jobs:
         echo "OPENCV_DOWNLOAD_PATH=$BINARIES_CACHE"
 
 
+    # Hardcoded CI checkout and build flow for OpenCV, contrib, and extra (branch 4.x)
+
     - name: Checkout and merge OpenCV
       run: |
         echo "::group::Clone OpenCV"
@@ -127,7 +129,27 @@ jobs:
         git config user.email "opencv.ci"
         git config user.name "opencv.ci"
         echo "::endgroup::"
-
+    
+    - name: Checkout OpenCV contrib
+      run: |
+        echo "::group::Clone OpenCV Contrib"
+        rm -rf opencv_contrib
+        git clone --single-branch --branch 4.x https://github.com/opencv/opencv_contrib.git
+        cd opencv_contrib
+        git config user.email "opencv.ci"
+        git config user.name "opencv.ci"
+        echo "::endgroup::"
+    
+    - name: Checkout OpenCV extra
+      run: |
+        echo "::group::Clone OpenCV Extra"
+        rm -rf opencv_extra
+        git clone --single-branch --branch 4.x https://github.com/opencv/opencv_extra.git
+        cd opencv_extra
+        git config user.email "opencv.ci"
+        git config user.name "opencv.ci"
+        echo "::endgroup::"
+    
     - name: Update extra dnn models
       timeout-minutes: 60
       working-directory: '${{ github.workspace }}'
@@ -136,23 +158,22 @@ jobs:
           --cleanup \
           --dst '${{ env.DNN_MODELS }}/dnn'
         echo "OPENCV_DNN_TEST_DATA_PATH=${{ env.DNN_MODELS }}" >> $GITHUB_ENV
-
-    - if: ${{ github.event.repository.name != 'opencv_contrib' }}
-      name: Configure and build OpenCV
+    
+    - name: Configure and build OpenCV
       uses: ./configure-and-build
       with:
         workdir: '${{ github.workspace }}'
         builddir: 'build'
-        generator: '${{ matrix.vs }}'
-        options: '-A ${{ matrix.cmake_arch }} ${{ env.CMAKE_OPT }}'
-
+        generator: 'Visual Studio 17 2022'
+        options: '-A arm64 -DCMAKE_BUILD_TYPE=Release -DWITH_OPENCL=OFF -DWITH_VULKAN=OFF -DBUILD_opencv_vulkan=OFF -DOPENCV_DNN_VULKAN=OFF -DCMAKE_DISABLE_FIND_PACKAGE_Vulkan=ON -DOPENCV_ENABLE_NONFREE=ON'
+    
     - name: Configure and build OpenCV with contrib
       uses: ./configure-and-build
       with:
         workdir: '${{ github.workspace }}'
         builddir: 'build-contrib'
-        generator: '${{ matrix.vs }}'
-        options: '-A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release -DOPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules ${{ env.CMAKE_OPT }}'
+        generator: 'Visual Studio 17 2022'
+        options: '-A arm64 -DCMAKE_BUILD_TYPE=Release -DOPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules -DWITH_OPENCL=OFF -DWITH_VULKAN=OFF -DBUILD_opencv_vulkan=OFF -DOPENCV_DNN_VULKAN=OFF -DCMAKE_DISABLE_FIND_PACKAGE_Vulkan=ON -DOPENCV_ENABLE_NONFREE=ON'
 
     - name: Run OpenCV tests
       uses: ./run-tests
