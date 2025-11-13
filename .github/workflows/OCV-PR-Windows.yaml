@@ -123,7 +123,7 @@ jobs:
       with:
         target_branch: '${{ matrix.branch }}'
         author: '${{ github.event.pull_request.user.login }}'
-        source_branch: "${{ github.head_ref }}"
+        source_branch: "4.x"
         gitcache: '${{ env.GIT_CACHE }}'
         workdir: '${{ github.workspace }}'
 
