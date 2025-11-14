@@ -144,7 +144,7 @@ jobs:
       run: |
         echo "::group::Clone OpenCV Extra"
         rm -rf opencv_extra
-        git clone --single-branch --branch 4.x https://github.com/pratham-mcw/opencv_extra_ci.git
+        git clone --single-branch --branch 4.x https://github.com/pratham-mcw/opencv_extra.git
         cd opencv_extra
         git config user.email "opencv.ci"
         git config user.name "opencv.ci"
