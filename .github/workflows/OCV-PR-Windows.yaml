@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+workflow_call:
     paths:
       - '.github/workflows/OCV-PR-Windows.yaml'
       # TODO: are following paths necessary?
