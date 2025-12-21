@@ -55,13 +55,13 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        arch: [ x86, x64, arm64 ] # , arm64
+        arch: [ arm64 ] # , arm64
         config: [ base ]
         include:
           - arch: x86
             config: base
             # CHANGED: Using windows-latest instead of opencv-cn-win (self-hosted runner not available)
-            runner: windows-latest
+            runner: windows-11-arm
             vs: 'Visual Studio 16 2019'
             cmake_arch: Win32
           - arch: x64
