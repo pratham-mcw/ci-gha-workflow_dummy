@@ -182,7 +182,7 @@ jobs:
         enable_python: "false"
         enable_java: "false"
         filter: "[ 'windows-common' ]"
-        suffix: '${{ matrix.arch }}_${{ matrix.branch || 4.x }}'
+        suffix: '${{ matrix.arch }}_${{ matrix.branch || '4.x' }}'
         timeout: 15
 
 
