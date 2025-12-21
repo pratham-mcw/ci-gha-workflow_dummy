@@ -141,7 +141,6 @@ jobs:
         python -m pip install requests
     
     - name: Update extra dnn models
-      if: ${{ matrix.arch != 'arm64' }}
       timeout-minutes: 60
       working-directory: '${{ github.workspace }}'
       run: |
