@@ -61,19 +61,19 @@ jobs:
           - arch: x86
             config: base
             # CHANGED: Using windows-latest instead of opencv-cn-win (self-hosted runner not available)
-            runner: windows-latest
+            runner: opencv-cn-win
             vs: 'Visual Studio 16 2019'
             cmake_arch: Win32
           - arch: x64
             config: base
             # CHANGED: Using windows-latest instead of opencv-cn-win (self-hosted runner not available)
-            runner: windows-latest
+            runner: opencv-cn-win
             vs: 'Visual Studio 16 2019'
             cmake_arch: x64
           - arch: arm64
             config: base
             # CHANGED: Using windows-latest instead of windows-11-arm (not available on GitHub)
-            runner: windows-latest
+            runner: windows-11-arm
             vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
