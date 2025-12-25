@@ -167,105 +167,98 @@ on:
     branches: [ main ]
 
 jobs:
-  windows:
+  build-test:
     runs-on: windows-11-arm
 
-env:
-  OPENCV_ROOT: ${{ github.workspace }}\OPENCV
+    env:
+      OPENCV_ROOT: ${{ github.workspace }}\OPENCV
 
-steps:
-  - name: Create OPENCV folder
-    shell: cmd
-    run: mkdir OPENCV
+    steps:
+      - name: Create OPENCV folder
+        shell: cmd
+        run: mkdir OPENCV
 
-  - name: Clone OpenCV
-    shell: cmd
-    working-directory: OPENCV
-    run: |
-      git clone https://github.com/opencv/opencv.git
-      cd opencv
-      git checkout 4.x
+      - name: Clone OpenCV
+        shell: cmd
+        working-directory: OPENCV
+        run: |
+          git clone https://github.com/opencv/opencv.git
+          cd opencv
+          git checkout 4.x
 
-  - name: Clone OpenCV Contrib
-    shell: cmd
-    working-directory: OPENCV
-    run: |
-      git clone https://github.com/opencv/opencv_contrib.git
-      cd opencv_contrib
-      git checkout 4.x
+      - name: Clone OpenCV Contrib
+        shell: cmd
+        working-directory: OPENCV
+        run: |
+          git clone https://github.com/opencv/opencv_contrib.git
+          cd opencv_contrib
+          git checkout 4.x
 
-  - name: Clone OpenCV Extra
-    shell: cmd
-    working-directory: OPENCV
-    run: |
-      git clone https://github.com/opencv/opencv_extra.git
-      cd opencv_extra
-      git checkout 4.x
+      - name: Clone OpenCV Extra
+        shell: cmd
+        working-directory: OPENCV
+        run: |
+          git clone https://github.com/opencv/opencv_extra.git
+          cd opencv_extra
+          git checkout 4.x
 
-  - name: Setup DNN test data
-    shell: cmd
-    run: |
-      mkdir dnn
-      cd dnn
-      pip install requests
-      python %OPENCV_ROOT%\opencv_extra\testdata\dnn\download_models.py
+      - name: Setup DNN test data
+        shell: cmd
+        run: |
+          mkdir dnn
+          cd dnn
+          pip install requests
+          python %OPENCV_ROOT%\opencv_extra\testdata\dnn\download_models.py
 
-  - name: Configure environment variables
-    shell: cmd
-    run: |
-      echo OPENCV_DNN_TEST_DATA_PATH=%cd%>> %GITHUB_ENV%
-      echo OPENCV_TEST_DATA_PATH=%OPENCV_ROOT%\opencv_extra\testdata>> %GITHUB_ENV%
+      - name: Configure environment variables
+        shell: cmd
+        run: |
+          echo OPENCV_DNN_TEST_DATA_PATH=%cd%>> %GITHUB_ENV%
+          echo OPENCV_TEST_DATA_PATH=%OPENCV_ROOT%\opencv_extra\testdata>> %GITHUB_ENV%
 
-  - name: Configure OpenCV
-    shell: cmd
-    working-directory: OPENCV\opencv
-    run: >
-      cmake -S . -B build -G "Visual Studio 17 2022"
-      -DCMAKE_BUILD_TYPE=Release
-      -DBUILD_opencv_world=ON
-      -DWITH_ITT=OFF
-      -DWITH_OPENCL=OFF
-      -DWITH_OPENCLAMDBLAS=OFF
-      -DWITH_OPENCLAMDFFT=OFF
-      -DWITH_OPENCL_D3D11_NV=OFF
-      -DWITH_DIRECTML=OFF
-      -DWITH_DIRECTX=OFF
-      -DWITH_ADE=OFF
-      -DCPU_BASELINE="NEON"
-      -DBUILD_opencv_python3=ON
-      -DOPENCV_EXTRA_MODULES_PATH="%OPENCV_ROOT%\opencv_contrib\modules"
+      - name: Configure OpenCV
+        shell: cmd
+        working-directory: OPENCV\opencv
+        run: >
+          cmake -S . -B build -G "Visual Studio 17 2022"
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_opencv_world=ON
+          -DWITH_ITT=OFF
+          -DWITH_OPENCL=OFF
+          -DWITH_OPENCLAMDBLAS=OFF
+          -DWITH_OPENCLAMDFFT=OFF
+          -DWITH_OPENCL_D3D11_NV=OFF
+          -DWITH_DIRECTML=OFF
+          -DWITH_DIRECTX=OFF
+          -DWITH_ADE=OFF
+          -DCPU_BASELINE="NEON"
+          -DBUILD_opencv_python3=ON
+          -DOPENCV_EXTRA_MODULES_PATH="%OPENCV_ROOT%\opencv_contrib\modules"
 
-  - name: Build OpenCV
-    shell: cmd
-    working-directory: OPENCV\opencv\build
-    run: cmake --build . --config Release --parallel
+      - name: Build OpenCV
+        shell: cmd
+        working-directory: OPENCV\opencv\build
+        run: cmake --build . --config Release --parallel
 
-  - name: Install OpenCV
-    shell: cmd
-    working-directory: OPENCV\opencv\build
-    run: cmake --build . --target INSTALL --config Release
+      - name: Install OpenCV
+        shell: cmd
+        working-directory: OPENCV\opencv\build
+        run: cmake --build . --target INSTALL --config Release
 
-  # ===========================
-  # Run OpenCV functionality tests
-  # ===========================
-  - name: Run opencv_test binaries
-    shell: cmd
-    working-directory: OPENCV\opencv\build\bin\Release
-    run: |
-      for %f in (opencv_test_*.exe) do (
-        echo Running %f
-        "%f"
-      )
+      - name: Run OpenCV functionality tests
+        shell: cmd
+        working-directory: OPENCV\opencv\build\bin\Release
+        run: |
+          for %f in (opencv_test_*.exe) do (
+            echo Running %f
+            "%f"
+          )
 
-  # ===========================
-  # Run OpenCV performance tests
-  # ===========================
-  - name: Run opencv_perf binaries
-    shell: cmd
-    working-directory: OPENCV\opencv\build\bin\Release
-    run: |
-      for %f in (opencv_perf_*.exe) do (
-        echo Running %f
-        "%f"
-      )
-
+      - name: Run OpenCV performance tests
+        shell: cmd
+        working-directory: OPENCV\opencv\build\bin\Release
+        run: |
+          for %f in (opencv_perf_*.exe) do (
+            echo Running %f
+            "%f"
+          )
