@@ -165,7 +165,7 @@ on:
   pull_request:
   push:
     branches: [ main ]
-
+  workflow_call:
 jobs:
   build-test:
     runs-on: windows-11-arm
