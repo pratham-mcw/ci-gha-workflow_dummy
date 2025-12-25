@@ -90,21 +90,13 @@ jobs:
         shell: cmd
         working-directory: OPENCV\opencv\build
         run: cmake --build . --target INSTALL --config Release
-
+      
       - name: Run OpenCV functionality tests
         shell: cmd
         working-directory: OPENCV\opencv\build\bin\Release
-        run: |
-          for %f in (opencv_test_*.exe) do (
-            echo Running %f
-            "%f"
-          )
-
+        run: for %%f in (opencv_test_*.exe) do echo Running %%f & "%%f"
+      
       - name: Run OpenCV performance tests
         shell: cmd
         working-directory: OPENCV\opencv\build\bin\Release
-        run: |
-          for %f in (opencv_perf_*.exe) do (
-            echo Running %f
-            "%f"
-          )
+        run: for %%f in (opencv_perf_*.exe) do echo Running %%f & "%%f"
