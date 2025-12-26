@@ -91,12 +91,22 @@ jobs:
         working-directory: OPENCV\opencv\build
         run: cmake --build . --target INSTALL --config Release
       
-      - name: Run OpenCV functionality tests
-        shell: cmd
-        working-directory: OPENCV\opencv\build\bin\Release
-        run: for %%f in (opencv_test_*.exe) do echo Running %%f & "%%f"
-      
-      - name: Run OpenCV performance tests
-        shell: cmd
-        working-directory: OPENCV\opencv\build\bin\Release
-        run: for %%f in (opencv_perf_*.exe) do echo Running %%f & "%%f"
+      - name: Run OpenCV tests (functional + perf)
+        uses: ./ci/run-tests
+        env:
+          OPENCV_TEST_DATA_PATH: '${{ env.OPENCV_TEST_DATA_PATH }}'
+          OPENCV_TEST_REQUIRE_DATA: 0
+          OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
+          PYTHONPATH: '${{ env.PYTHONPATH }}'
+        with:
+          workdir: '${{ github.workspace }}'
+          builddir: 'OPENCV/opencv/build'
+          logdir: '${{ github.workspace }}'
+          plan: 'ci/scripts/test-plan-win-4.x.json'
+          suite: '[ "main" ]'
+          enable_python: 'false'
+          enable_java: 'false'
+          filter: '[ "windows-common" ]'
+          suffix: 'arm64_4.x'
+          timeout: 15
+
