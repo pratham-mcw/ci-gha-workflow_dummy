@@ -89,7 +89,7 @@ jobs:
       - name: Build OpenCV
         shell: cmd
         working-directory: OPENCV\opencv\build
-        run: cmake --build . --config Release --parallel
+        run: cmake --build . --config Release
 
       - name: Install OpenCV
         shell: cmd
