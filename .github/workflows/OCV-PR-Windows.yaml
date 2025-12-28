@@ -91,22 +91,23 @@ jobs:
         working-directory: OPENCV\opencv\build
         run: cmake --build . --target INSTALL --config Release
       
-      - name: Run OpenCV tests (functional + perf)
-        uses: ./ci/run-tests
+      - name: Run OpenCV tests
+        shell: cmd
+        run: |
+          python %OPENCV_ROOT%\opencv\ci\run-tests.py ^
+            --workdir "%GITHUB_WORKSPACE%" ^
+            --builddir "%OPENCV_ROOT%\opencv\build" ^
+            --logdir "%GITHUB_WORKSPACE%\test_logs" ^
+            --plan "%OPENCV_ROOT%\opencv\ci\scripts\test-plan-win-4.x.json" ^
+            --suite main ^
+            --filter windows-common ^
+            --timeout 30
         env:
-          OPENCV_TEST_DATA_PATH: '${{ env.OPENCV_TEST_DATA_PATH }}'
+          OPENCV_CI_BUILD_NAME: win-arm64
+          OPENCV_CI_FORCE_CORES: 2
+          OPENCV_TEST_DATA_PATH: ${{ env.OPENCV_TEST_DATA_PATH }}
           OPENCV_TEST_REQUIRE_DATA: 0
           OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
-          PYTHONPATH: '${{ env.PYTHONPATH }}'
-        with:
-          workdir: '${{ github.workspace }}'
-          builddir: 'OPENCV/opencv/build'
-          logdir: '${{ github.workspace }}'
-          plan: 'ci/scripts/test-plan-win-4.x.json'
-          suite: '[ "main" ]'
-          enable_python: 'false'
-          enable_java: 'false'
-          filter: '[ "windows-common" ]'
-          suffix: 'arm64_4.x'
-          timeout: 15
-
+          OPENCV_TEST_DEBUG: 0
+          OPENCV_SKIP_PYTHON_TESTS: 1
+          OPENCV_SKIP_JAVA_TESTS: 1
