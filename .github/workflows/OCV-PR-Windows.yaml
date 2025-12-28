@@ -48,6 +48,11 @@ jobs:
           cd opencv_extra
           git checkout 4.x
 
+      - name: Clone CI workflow (required for tests)
+        shell: cmd
+        run: |
+          git clone https://github.com/opencv/ci-gha-workflow.git
+
       - name: Setup DNN test data
         shell: cmd
         run: |
@@ -90,24 +95,22 @@ jobs:
         shell: cmd
         working-directory: OPENCV\opencv\build
         run: cmake --build . --target INSTALL --config Release
-      
-      - name: Run OpenCV tests
+
+      - name: Run OpenCV tests (CI-identical)
         shell: cmd
         run: |
-          python %OPENCV_ROOT%\opencv\ci\run-tests.py ^
-            --workdir "%GITHUB_WORKSPACE%" ^
-            --builddir "%OPENCV_ROOT%\opencv\build" ^
+          python %GITHUB_WORKSPACE%\ci-gha-workflow\scripts\runner.py ^
+            --bindir=bin ^
+            --exesuffix=.exe ^
+            --workdir "%OPENCV_ROOT%\opencv\build" ^
             --logdir "%GITHUB_WORKSPACE%\test_logs" ^
-            --plan "%OPENCV_ROOT%\opencv\ci\scripts\test-plan-win-4.x.json" ^
+            --plan "%GITHUB_WORKSPACE%\ci-gha-workflow\scripts\test-plan-win-4.x.json" ^
             --suite main ^
             --filter windows-common ^
-            --timeout 30
+            --timeout 30 ^
+            --options default
         env:
-          OPENCV_CI_BUILD_NAME: win-arm64
-          OPENCV_CI_FORCE_CORES: 2
           OPENCV_TEST_DATA_PATH: ${{ env.OPENCV_TEST_DATA_PATH }}
           OPENCV_TEST_REQUIRE_DATA: 0
           OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
-          OPENCV_TEST_DEBUG: 0
-          OPENCV_SKIP_PYTHON_TESTS: 1
-          OPENCV_SKIP_JAVA_TESTS: 1
+          OPENCV_OPENCL_RUNTIME: disabled
