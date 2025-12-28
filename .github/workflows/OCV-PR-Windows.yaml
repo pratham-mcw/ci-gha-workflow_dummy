@@ -115,8 +115,8 @@ jobs:
             --timeout 30 ^
             --options default
         env:
-          OPENCV_DNN_TEST_DATA_PATH: %OPENCV_ROOT%
-          OPENCV_TEST_DATA_PATH: %OPENCV_ROOT%\opencv_extra\testdata
+          OPENCV_DNN_TEST_DATA_PATH: ${{ env.OPENCV_ROOT }}
+          OPENCV_TEST_DATA_PATH: ${{ env.OPENCV_ROOT }}\opencv_extra\testdata
           OPENCV_TEST_REQUIRE_DATA: 0
           OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
           OPENCV_OPENCL_RUNTIME: disabled
