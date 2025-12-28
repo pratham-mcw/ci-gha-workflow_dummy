@@ -95,15 +95,15 @@ jobs:
         shell: cmd
         working-directory: OPENCV\opencv\build
         run: cmake --build . --target INSTALL --config Release
-      
-      - name: Run OpenCV tests (CI-identical)
+            
+      - name: Run OpenCV tests
         shell: cmd
         run: |
           echo OPENCV_ROOT=%OPENCV_ROOT%
-          dir "%OPENCV_ROOT%\opencv\build\bin"
+          dir "%OPENCV_ROOT%\opencv\build\bin\Release"
       
           python %GITHUB_WORKSPACE%\ci-gha-workflow\scripts\runner.py ^
-            --bindir=bin ^
+            --bindir=bin\Release ^
             --exesuffix=.exe ^
             --workdir "%OPENCV_ROOT%\opencv\build" ^
             --logdir "%GITHUB_WORKSPACE%\test_logs" ^
@@ -114,8 +114,8 @@ jobs:
             --options default
         env:
           OPENCV_ROOT: C:\a\opencv\opencv\OPENCV
-          OPENCV_TEST_DATA_PATH: C:\a\opencv\opencv\OPENCV\opencv_extra\testdata
           OPENCV_DNN_TEST_DATA_PATH: C:\a\opencv\opencv
+          OPENCV_TEST_DATA_PATH: C:\a\opencv\opencv\OPENCV\opencv_extra\testdata
           OPENCV_TEST_REQUIRE_DATA: 0
           OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
           OPENCV_OPENCL_RUNTIME: disabled
