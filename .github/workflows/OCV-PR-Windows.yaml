@@ -28,7 +28,7 @@ jobs:
         shell: cmd
         working-directory: OPENCV
         run: |
-          git clone https://github.com/opencv/opencv.git
+          git clone https://github.com/pratham-mcw/opencv.git
           cd opencv
           git checkout 4.x
 
@@ -36,7 +36,7 @@ jobs:
         shell: cmd
         working-directory: OPENCV
         run: |
-          git clone https://github.com/opencv/opencv_contrib.git
+          git clone https://github.com/pratham-mcw/opencv_contrib.git
           cd opencv_contrib
           git checkout 4.x
 
@@ -51,7 +51,7 @@ jobs:
       - name: Clone CI workflow (required for tests)
         shell: cmd
         run: |
-          git clone https://github.com/opencv/ci-gha-workflow.git
+          git clone https://github.com/pratham-mcw/ci-gha-workflow_dummy.git
 
       - name: Setup DNN test data
         shell: cmd
