@@ -44,7 +44,7 @@ jobs:
         shell: cmd
         working-directory: OPENCV
         run: |
-          git clone https://github.com/opencv/opencv_extra.git
+          git clone https://github.com/pratham-mcw/opencv_extra.git
           cd opencv_extra
           git checkout 4.x
 
