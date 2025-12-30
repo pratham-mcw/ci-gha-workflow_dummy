@@ -28,7 +28,7 @@ jobs:
         shell: cmd
         working-directory: OPENCV
         run: |
-          git clone https://github.com/pratham-mcw/opencv.git
+          git clone https://github.com/opencv/opencv.git
           cd opencv
           git checkout 4.x
 
@@ -36,7 +36,7 @@ jobs:
         shell: cmd
         working-directory: OPENCV
         run: |
-          git clone https://github.com/pratham-mcw/opencv_contrib.git
+          git clone https://github.com/opencv/opencv_contrib.git
           cd opencv_contrib
           git checkout 4.x
 
@@ -44,7 +44,7 @@ jobs:
         shell: cmd
         working-directory: OPENCV
         run: |
-          git clone https://github.com/pratham-mcw/opencv_extra.git
+          git clone https://github.com/opencv/opencv_extra.git
           cd opencv_extra
           git checkout 4.x
 
@@ -81,7 +81,7 @@ jobs:
           -DWITH_OPENCL_D3D11_NV=OFF
           -DWITH_DIRECTML=OFF
           -DWITH_DIRECTX=OFF
-          -DWITH_ADE=OFF
+          -DWITH_ADE=ON
           -DCPU_BASELINE="NEON"
           -DBUILD_opencv_python3=ON
           -DOPENCV_EXTRA_MODULES_PATH="%OPENCV_ROOT%\opencv_contrib\modules"
