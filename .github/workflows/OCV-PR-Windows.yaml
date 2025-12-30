@@ -51,7 +51,9 @@ jobs:
       - name: Clone CI workflow (required for tests)
         shell: cmd
         run: |
-          git clone https://github.com/pratham-mcw/ci-gha-workflow_dummy.git
+          git clone https://github.com/opencv/ci-gha-workflow.git
+          cd ci-gha-workflow
+          git checkout 4.x
 
       - name: Setup DNN test data
         shell: cmd
