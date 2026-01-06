@@ -156,7 +156,7 @@ jobs:
         logdir: '${{ github.workspace }}'
         plan: "test-plan-win-4.x.json"
         suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib'''  || '''main''' }} ]"
-        filter: "[ 'windows-common', 'windows-arm64-skip-known' ]"
+        filter: windows-common
         enable_python: "false"
         enable_java: "false"
         suffix: '${{ matrix.arch }}_4.x'
