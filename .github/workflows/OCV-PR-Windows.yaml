@@ -106,7 +106,7 @@ jobs:
 
 
     - name: Checkout and merge OpenCV
-      uses: ./checkout-and-merge
+      uses: pratham-mcw/ci-gha-workflow_dummy/checkout-and-merge@main
       with:
         target_branch: 4.x
         author: '${{ github.event.pull_request.user.login }}'
