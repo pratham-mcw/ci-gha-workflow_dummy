@@ -105,14 +105,16 @@ jobs:
         echo "OPENCV_DOWNLOAD_PATH=$BINARIES_CACHE"
 
 
-    - name: Checkout and merge OpenCV
+    - name: Checkout and merge OpenCV (fork)
       uses: ./checkout-and-merge
       with:
+        repo: pratham-mcw/opencv
         target_branch: 4.x
-        author: '${{ github.event.pull_request.user.login }}'
-        source_branch: "${{ github.event.repository.name == 'ci-gha-workflow' && '' || github.head_ref }}"
+        source_branch: "${{ github.head_ref }}"
+        author: pratham-mcw
         gitcache: '${{ env.GIT_CACHE }}'
         workdir: '${{ github.workspace }}'
+
 
     - name: Update extra dnn models
       if: ${{ matrix.arch != 'arm64' }}
