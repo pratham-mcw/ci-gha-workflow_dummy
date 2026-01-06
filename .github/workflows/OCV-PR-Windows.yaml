@@ -79,13 +79,13 @@ jobs:
 
     steps:
 
-    - name: Propagate environment
-      shell: bash
-      run: |
-        echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
-        echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
-        echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
-        echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
+    # - name: Propagate environment
+    #   shell: bash
+    #   run: |
+    #     echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
+    #     echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
+    #     echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
+    #     echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
 
 
