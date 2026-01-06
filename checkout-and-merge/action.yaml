@@ -36,7 +36,7 @@ runs:
         --reference-if-able ${{ inputs.gitcache }}/opencv.git \
         --single-branch \
         --branch ${{ inputs.target_branch }} \
-        https://github.com/opencv/opencv.git
+        https://github.com/pratham-mcw/opencv.git
         cd opencv
         git config user.email "opencv.ci"
         git config user.name "opencv.ci"
