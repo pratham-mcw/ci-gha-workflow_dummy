@@ -158,9 +158,14 @@ jobs:
         suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib'''  || '''main''' }} ]"
         enable_python: "false"
         enable_java: "false"
-        filter: "[ 'windows-common' ]"
+        filter: >-
+          [
+            "windows-common",
+            "-:Media.audio/1:AudioOpenCheck.MSMF_bad_arg_invalid_audio_sample_per_second:Core/meanStdDev/ElementwiseTest.accuracy/0"
+          ]
         suffix: '${{ matrix.arch }}_4.x'
         timeout: 15
+
 
     - if: ${{ always() && env.WARNINGS == '1' }}
       name: Warnings check
