@@ -78,7 +78,12 @@ jobs:
     # ==========
 
     steps:
-
+    - name: Shorten workspace path
+      shell: powershell
+      run: |
+        subst S: "${{ github.workspace }}"
+        echo "GITHUB_WORKSPACE=S:\" >> $env:GITHUB_ENV
+        
     - name: Propagate environment
       shell: bash
       run: |
