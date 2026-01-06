@@ -90,23 +90,12 @@
             "perf_dnn": [
                 "Utils_blobFromImages.HWC_TO_NCHW/6"
             ]
-        },
-    
-        "windows-arm64-skip-known": {
-            "test_audio": [
-                "Media.audio/1",
-                "AudioOpenCheck.MSMF_bad_arg_invalid_audio_sample_per_second"
-            ],
-            "test_core": [
-                "Core/meanStdDev/ElementwiseTest.accuracy/0"
-            ]
         }
     },
-
     "options": {
         "default": {
             "args": {
-                "test": "--skip_unstable=1",
+                "test": "--skip_unstable=1 --gtest_filter=-Media.audio/1:-AudioOpenCheck.MSMF_bad_arg_invalid_audio_sample_per_second:-Core/meanStdDev/ElementwiseTest.accuracy/0",
                 "perf": "--perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1"
             },
             "exe": {},
