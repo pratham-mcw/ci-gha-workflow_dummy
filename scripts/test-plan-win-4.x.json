@@ -91,11 +91,13 @@
                 "Utils_blobFromImages.HWC_TO_NCHW/6"
             ]
         },
-
+    
         "windows-arm64-skip-known": {
-            "exclude": [
+            "test_audio": [
                 "Media.audio/1",
-                "AudioOpenCheck.MSMF_bad_arg_invalid_audio_sample_per_second",
+                "AudioOpenCheck.MSMF_bad_arg_invalid_audio_sample_per_second"
+            ],
+            "test_core": [
                 "Core/meanStdDev/ElementwiseTest.accuracy/0"
             ]
         }
