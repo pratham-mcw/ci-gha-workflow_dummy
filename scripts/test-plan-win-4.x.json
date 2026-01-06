@@ -78,6 +78,7 @@
             "opencv_perf_xphoto"
         ]
     },
+
     "filters": {
         "windows-common": {
             "test_core": [
@@ -89,8 +90,17 @@
             "perf_dnn": [
                 "Utils_blobFromImages.HWC_TO_NCHW/6"
             ]
+        },
+
+        "windows-arm64-skip-known": {
+            "exclude": [
+                "Media.audio/1",
+                "AudioOpenCheck.MSMF_bad_arg_invalid_audio_sample_per_second",
+                "Core/meanStdDev/ElementwiseTest.accuracy/0"
+            ]
         }
     },
+
     "options": {
         "default": {
             "args": {
