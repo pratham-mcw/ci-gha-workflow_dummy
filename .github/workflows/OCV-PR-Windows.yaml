@@ -1,123 +1,170 @@
-name: OpenCV Local Exact Steps (Windows ARM64)
+name: OCV PR Windows
 
 on:
   pull_request:
-  push:
-    branches: [ main ]
+    branches:
+      - main
+    paths:
+      - '.github/workflows/OCV-PR-Windows.yaml'
+      # TODO: are following paths necessary?
+      - 'checkout-and-merge/*'
+      - 'configure-and-build/*'
+      - 'run-tests/*'
+      - 'scripts/runner.py'
+      - 'scripts/test-plan.json'
   workflow_call:
     inputs:
       workflow_branch:
-        description: "Branch for workflow repository"
-        required: false
+        description: "Branch for ci-gha-workflow repository"
         default: "main"
+        required: false
         type: string
 
-jobs:
-  build-test:
-    runs-on: [self-hosted, Windows, ARM64]
+concurrency:
+  group: OCV-PR-Windows-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
+
+  branch_eval:
+    runs-on: ubuntu-24.04
+    outputs:
+      branches: ${{ steps.determine-branches.outputs.branches }}
+    steps:
+        - id: determine-branches
+          shell: bash
+          run: |
+            if [ "${{ github.event.repository.name == 'ci-gha-workflow' }}" = "true" ] ; then
+              echo "branches=[ '4.x', '5.x' ]" >> "$GITHUB_OUTPUT"
+            else
+              echo "branches=[ '${{ github.base_ref }}' ]" >> "$GITHUB_OUTPUT"
+            fi
+
+  Windows:
+    runs-on: [self-hosted, Windows, ARM64]
+    needs:
+      - branch_eval
+    strategy:
+      # NOTE: Debugging
+      # fail-fast: true
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        arch: [ arm64 ]
+        config: [ base ]
+        include:
+          - arch: arm64
+            config: base
+            vs: 'Visual Studio 17 2022'
+            cmake_arch: ARM64
+            no_opencl: true
+
+        branch: ${{ fromJSON(needs.branch_eval.outputs.branches )}}
+    defaults:
+      run:
+        shell: bash
     env:
-      OPENCV_ROOT: ${{ github.workspace }}\OPENCV
+      CMAKE_OPT: >-
+        -DCL_Z_OPTION=/Z7
+        -DBUILD_EXAMPLES=ON
+        -DOPENCV_ENABLE_NONFREE=ON
+        -DCMAKE_BUILD_TYPE=Release
+        ${{ matrix.no_opencl && '-DWITH_OPENCL=OFF' || '' }}
+        ${{ matrix.arch == 'x86' && '-DBUILD_opencv_python3=OFF' || '' }}
+      MAIN_BUILD_DIR: "${{ (github.event.repository.name != 'opencv_contrib') && 'build' || 'build-contrib' }}"
+      OPENCV_FOR_THREADS_NUM: 8
+      CMAKE_BUILD_PARALLEL_LEVEL: 8
+
+    # ==========
 
     steps:
-      - name: Create OPENCV folder
-        shell: cmd
-        run: mkdir OPENCV
 
-      - name: Clone OpenCV
-        shell: cmd
-        working-directory: OPENCV
-        run: |
-          git clone https://github.com/opencv/opencv.git
-          cd opencv
-          git checkout 4.x
+    - name: Propagate environment
+      run: |
+        echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
+        echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
+        echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
+        echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
-      - name: Clone OpenCV Contrib
-        shell: cmd
-        working-directory: OPENCV
-        run: |
-          git clone https://github.com/opencv/opencv_contrib.git
-          cd opencv_contrib
-          git checkout 4.x
 
-      - name: Clone OpenCV Extra
-        shell: cmd
-        working-directory: OPENCV
-        run: |
-          git clone https://github.com/pratham-mcw/opencv_extra.git
-          cd opencv_extra
-          git checkout 4.x
+    - name: Checkout workflow repository
+      uses: actions/checkout@v4
+      with:
+        repository: opencv/ci-gha-workflow
+        ref: "${{ github.repository == 'opencv/ci-gha-workflow' && github.ref || inputs.workflow_branch }}"
 
-      - name: Clone CI workflow (required for tests)
-        shell: cmd
-        run: |
-          git clone https://github.com/opencv/ci-gha-workflow.git
+    - working-directory: '${{ github.workspace }}'
+      shell: bash
+      run: |
+        ls -l
+        export
+        whoami
+        id
+        which bash
+        echo "GIT_CACHE=$GIT_CACHE"
+        echo "DNN_MODELS=$DNN_MODELS"
+        echo "BINARIES_CACHE=$BINARIES_CACHE"
+        echo "OPENCV_DOWNLOAD_PATH=$BINARIES_CACHE"
 
-      - name: Setup DNN test data
-        shell: cmd
-        run: |
-          mkdir dnn
-          cd dnn
-          pip install requests
-          python %OPENCV_ROOT%\opencv_extra\testdata\dnn\download_models.py
 
-      - name: Configure environment variables
-        shell: cmd
-        run: |
-          echo OPENCV_DNN_TEST_DATA_PATH=%cd%>> %GITHUB_ENV%
-          echo OPENCV_TEST_DATA_PATH=%OPENCV_ROOT%\opencv_extra\testdata>> %GITHUB_ENV%
+    - name: Checkout and merge OpenCV
+      uses: ./checkout-and-merge
+      with:
+        target_branch: '${{ matrix.branch }}'
+        author: '${{ github.event.pull_request.user.login }}'
+        source_branch: "${{ github.event.repository.name == 'ci-gha-workflow' && '' || github.head_ref }}"
+        gitcache: '${{ env.GIT_CACHE }}'
+        workdir: '${{ github.workspace }}'
 
-      - name: Configure OpenCV
-        shell: cmd
-        working-directory: OPENCV\opencv
-        run: >
-          cmake -S . -B build -G "Visual Studio 17 2022"
-          -DCMAKE_BUILD_TYPE=Release
-          -DBUILD_opencv_world=ON
-          -DWITH_ITT=OFF
-          -DWITH_OPENCL=OFF
-          -DWITH_OPENCLAMDBLAS=OFF
-          -DWITH_OPENCLAMDFFT=OFF
-          -DWITH_OPENCL_D3D11_NV=OFF
-          -DWITH_DIRECTML=OFF
-          -DWITH_DIRECTX=OFF
-          -DWITH_ADE=ON
-          -DCPU_BASELINE="NEON"
-          -DBUILD_opencv_python3=ON
-          -DOPENCV_EXTRA_MODULES_PATH="%OPENCV_ROOT%\opencv_contrib\modules"
+    - name: Update extra dnn models
+      if: ${{ matrix.arch != 'arm64' }}
+      timeout-minutes: 60
+      working-directory: '${{ github.workspace }}'
+      run: |
+        python opencv_extra/testdata/dnn/download_models.py \
+          --cleanup \
+          --dst '${{ env.DNN_MODELS }}/dnn'
+        echo "OPENCV_DNN_TEST_DATA_PATH=${{ env.DNN_MODELS }}" >> $GITHUB_ENV
 
-      - name: Build OpenCV
-        shell: cmd
-        working-directory: OPENCV\opencv\build
-        run: cmake --build . --config Release
+    - if: ${{ github.event.repository.name != 'opencv_contrib' }}
+      name: Configure and build OpenCV
+      uses: ./configure-and-build
+      with:
+        workdir: '${{ github.workspace }}'
+        builddir: 'build'
+        generator: '${{ matrix.vs }}'
+        options: '-A ${{ matrix.cmake_arch }} ${{ env.CMAKE_OPT }}'
 
-      - name: Install OpenCV
-        shell: cmd
-        working-directory: OPENCV\opencv\build
-        run: cmake --build . --target INSTALL --config Release
-            
-      - name: Run OpenCV tests
-        shell: cmd
-        run: |
-          echo OPENCV_ROOT=%OPENCV_ROOT%
-          dir "%OPENCV_ROOT%\opencv\build\bin\Release"
-      
-          mkdir "%GITHUB_WORKSPACE%\test_logs"
-      
-          python %GITHUB_WORKSPACE%\ci-gha-workflow\scripts\runner.py ^
-            --bindir=bin\Release ^
-            --exesuffix=.exe ^
-            --workdir "%OPENCV_ROOT%\opencv\build" ^
-            --logdir "%GITHUB_WORKSPACE%\test_logs" ^
-            --plan "%GITHUB_WORKSPACE%\ci-gha-workflow\scripts\test-plan-win-4.x.json" ^
-            --suite main ^
-            --filter windows-common ^
-            --timeout 30 ^
-            --options default
-        env:
-          OPENCV_DNN_TEST_DATA_PATH: ${{ env.OPENCV_ROOT }}
-          OPENCV_TEST_DATA_PATH: ${{ env.OPENCV_ROOT }}\opencv_extra\testdata
-          OPENCV_TEST_REQUIRE_DATA: 0
-          OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
-          OPENCV_OPENCL_RUNTIME: disabled
+    - name: Configure and build OpenCV with contrib
+      uses: ./configure-and-build
+      with:
+        workdir: '${{ github.workspace }}'
+        builddir: 'build-contrib'
+        generator: '${{ matrix.vs }}'
+        options: '-A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release -DOPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules ${{ env.CMAKE_OPT }}'
 
+    - name: Run OpenCV tests
+      uses: ./run-tests
+      env:
+        OPENCV_TEST_DATA_PATH: '${{ github.workspace }}/opencv_extra/testdata'
+        OPENCV_TEST_REQUIRE_DATA: ${{ matrix.arch == 'arm64' && '0' || '1' }}
+        OPENCV_TEST_CHECK_OPTIONAL_DATA: ${{ matrix.arch == 'arm64' && '0' || '1' }}
+        PYTHONPATH: '${{ github.workspace }}/${{ env.MAIN_BUILD_DIR }}/python_loader:$PYTHONPATH'
+        OPENCV_OPENCL_RUNTIME: 'disabled'
+      with:
+        workdir: '${{ github.workspace }}'
+        builddir: '${{ env.MAIN_BUILD_DIR }}'
+        logdir: '${{ github.workspace }}'
+        plan: "test-plan-win-${{ matrix.branch }}.json"
+        suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib'''  || '''main''' }} ]"
+        enable_python: "false"
+        enable_java: "false"
+        filter: "[ 'windows-common' ]"
+        suffix: '${{ matrix.arch }}_${{ matrix.branch }}'
+        timeout: 15
+
+    - if: ${{ always() && env.WARNINGS == '1' }}
+      name: Warnings check
+      run: |
+        echo "::error Warnings have been found!"
+        exit 1
