@@ -147,6 +147,7 @@ jobs:
         OPENCV_TEST_REQUIRE_DATA: 1
         OPENCV_TEST_CHECK_OPTIONAL_DATA: 1
         PYTHONPATH: '${{ github.workspace }}/${{ env.MAIN_BUILD_DIR }}/python_loader:$PYTHONPATH'
+        WARNINGS: 0
       with:
         workdir: '${{ github.workspace }}'
         builddir: '${{ env.MAIN_BUILD_DIR }}'
@@ -163,4 +164,4 @@ jobs:
       name: Warnings check
       run: |
         echo "::error Warnings have been found!"
-        exit 0
+        exit 1
