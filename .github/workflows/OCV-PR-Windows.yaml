@@ -147,22 +147,20 @@ jobs:
       uses: ./run-tests
       env:
         OPENCV_TEST_DATA_PATH: '${{ github.workspace }}/opencv_extra/testdata'
-        OPENCV_TEST_REQUIRE_DATA: ${{ matrix.arch == 'arm64' && '0' || '1' }}
-        OPENCV_TEST_CHECK_OPTIONAL_DATA: ${{ matrix.arch == 'arm64' && '0' || '1' }}
+        OPENCV_TEST_REQUIRE_DATA: 1
+        OPENCV_TEST_CHECK_OPTIONAL_DATA: 1
         PYTHONPATH: '${{ github.workspace }}/${{ env.MAIN_BUILD_DIR }}/python_loader:$PYTHONPATH'
-        OPENCV_OPENCL_RUNTIME: 'disabled'
       with:
         workdir: '${{ github.workspace }}'
         builddir: '${{ env.MAIN_BUILD_DIR }}'
         logdir: '${{ github.workspace }}'
-        plan: "test-plan-win-4.x.json"
+        plan: "test-plan-win-${{ matrix.branch }}.json"
         suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib'''  || '''main''' }} ]"
-        filter: windows-common
         enable_python: "false"
         enable_java: "false"
-        suffix: '${{ matrix.arch }}_4.x'
+        filter: "[ 'windows-common' ]"
+        suffix: '${{ matrix.arch }}_${{ matrix.branch }}'
         timeout: 15
-
 
     - if: ${{ always() && env.WARNINGS == '1' }}
       name: Warnings check
