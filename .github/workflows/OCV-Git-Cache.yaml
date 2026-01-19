@@ -6,8 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/OCV-Git-Cache.yaml'
-  schedule:
-    - cron: '0 0 * * *'
+
 
 concurrency:
   group: OCV-Git-Cache-${{ github.ref }}
