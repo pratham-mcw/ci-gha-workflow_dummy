@@ -1,7 +1,6 @@
 name: OCV DNN Models Update
 
 on:
-  pull_request:
     branches:
       - main
     paths:
