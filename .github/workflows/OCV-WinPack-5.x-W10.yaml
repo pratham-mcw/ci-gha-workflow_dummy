@@ -1,7 +1,6 @@
 name: OCV WinPack:5.x W10
 
 on:
-  pull_request:
     branches:
       - main
     paths:
