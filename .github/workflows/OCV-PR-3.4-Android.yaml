@@ -1,7 +1,6 @@
 name: OCV PR:3.4 AndroidSDK
 
 on:
-  pull_request:
     branches:
       - main
     paths:
