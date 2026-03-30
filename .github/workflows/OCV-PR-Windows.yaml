@@ -25,7 +25,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   branch_eval:
     runs-on: ubuntu-24.04
     outputs:
@@ -41,7 +40,7 @@ jobs:
             fi
 
   Windows:
-    runs-on: ${{ matrix.runner }}
+    runs-on: self-hosted
     needs:
       - branch_eval
     strategy:
@@ -50,19 +49,19 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        arch: [ x86, x64, arm64 ]
+        arch: [ arm64 ]
         config: [ base ]
         include:
-          - arch: x86
-            config: base
-            runner: opencv-cn-win
-            vs: 'Visual Studio 16 2019'
-            cmake_arch: Win32
-          - arch: x64
-            config: base
-            runner: opencv-cn-win
-            vs: 'Visual Studio 16 2019'
-            cmake_arch: x64
+          # - arch: x86
+          #   config: base
+          #   runner: opencv-cn-win
+          #   vs: 'Visual Studio 16 2019'
+          #   cmake_arch: Win32
+          # - arch: x64
+          #   config: base
+          #   runner: opencv-cn-win
+          #   vs: 'Visual Studio 16 2019'
+          #   cmake_arch: x64
           - arch: arm64
             config: base
             runner: windows-11-arm
