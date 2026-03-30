@@ -1,10 +1,11 @@
 name: OCV Contrib WinPack:4.x W10
 
 on:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/OCV-Contrib-WinPack-4.x-W10.yaml'
+    push:
+        branches:
+          - main
+        paths:
+          - '.github/workflows/OCV-Contrib-WinPack-4.x-W10.yaml'
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
