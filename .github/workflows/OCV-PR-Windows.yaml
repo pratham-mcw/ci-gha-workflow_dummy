@@ -131,6 +131,7 @@ jobs:
         generator: '${{ matrix.vs }}'
         options: '-A ${{ matrix.cmake_arch }} ${{ env.CMAKE_OPT }}'
 
+
     - name: Configure and build OpenCV with contrib
       uses: ./configure-and-build
       with:
