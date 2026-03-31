@@ -95,7 +95,7 @@ jobs:
         ref: "${{ github.repository == 'opencv/ci-gha-workflow' && github.ref || inputs.workflow_branch }}"
 
     - working-directory: '${{ github.workspace }}'
-      shell: bash
+      shell: C:\Program Files\Git\bin\bash.exe {0}
       run: |
         ls -l
         export
