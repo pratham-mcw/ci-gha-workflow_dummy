@@ -77,8 +77,9 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
     - name: Propagate environment
-      shell: bash
+      shell: C:\Program Files\Git\bin\bash.exe -e {0}
       run: |
+        # Convert Windows path to Git Bash format (C:\path -> /c/path)
         git_cache_unix="/${GIT_CACHE:0:1}${GIT_CACHE:2}"
         git_cache_unix="${git_cache_unix//\\//}"
         
