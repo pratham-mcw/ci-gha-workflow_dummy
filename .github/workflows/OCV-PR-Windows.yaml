@@ -63,7 +63,7 @@ jobs:
         branch: ${{ fromJSON(needs.branch_eval.outputs.branches )}}
     defaults:
       run:
-        shell: C:\Program Files\Git\bin\bash.exe {0}
+        shell: C:\Progra~1\Git\bin\bash.exe {0}
     env:
       WARNINGS: 0
       CMAKE_OPT: >-
