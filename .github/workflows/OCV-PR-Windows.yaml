@@ -94,8 +94,7 @@ jobs:
         repository: opencv/ci-gha-workflow
         ref: "${{ github.repository == 'opencv/ci-gha-workflow' && github.ref || inputs.workflow_branch }}"
 
-    - working-directory: '${{ github.workspace }}'
-      run: |
+    - run: |
         ls -l
         export
         whoami
