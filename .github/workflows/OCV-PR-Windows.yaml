@@ -152,7 +152,6 @@ jobs:
         OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
         PYTHONPATH: '${{ github.workspace }}/${{ env.MAIN_BUILD_DIR }}/python_loader:$PYTHONPATH'
         WARNINGS: 0
-        GTEST_FILTER: '-Media.audio*'
       with:
         workdir: '${{ github.workspace }}'
         builddir: '${{ env.MAIN_BUILD_DIR }}'
@@ -164,6 +163,7 @@ jobs:
         filter: "[ 'windows-common' ]"
         suffix: '${{ matrix.arch }}_4.x'
         timeout: 15
+        options: "--gtest_filter=*:-Media.audio/mp4_1CN_MSMF"
 
     - if: ${{ always() && env.WARNINGS == '1' }}
       name: Warnings check
