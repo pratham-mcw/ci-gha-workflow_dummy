@@ -163,7 +163,6 @@ jobs:
         filter: "[ 'windows-common' ]"
         suffix: '${{ matrix.arch }}_4.x'
         timeout: 15
-        options: "--gtest_filter=*:-Media.audio/mp4_1CN_MSMF"
 
     - if: ${{ always() && env.WARNINGS == '1' }}
       name: Warnings check
