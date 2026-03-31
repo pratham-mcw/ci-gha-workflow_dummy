@@ -77,16 +77,16 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
     - name: Propagate environment
-      shell: pwsh
+      shell: powershell
       run: |
         function ConvertTo-UnixPath($Path) {
           $Path -replace '\\', '/' -replace '^([A-Z]):', { "/$($_.Groups[1].Value.ToLower())" }
         }
         
-        "GIT_CACHE=$(ConvertTo-UnixPath $env:GIT_CACHE)" >> $env:GITHUB_ENV
-        "DNN_MODELS=$(ConvertTo-UnixPath $env:DNN_MODELS)" >> $env:GITHUB_ENV
-        "BINARIES_CACHE=$(ConvertTo-UnixPath $env:BINARIES_CACHE)" >> $env:GITHUB_ENV
-        "OPENCV_DOWNLOAD_PATH=$(ConvertTo-UnixPath $env:BINARIES_CACHE)" >> $env:GITHUB_ENV
+        "GIT_CACHE=$(ConvertTo-UnixPath $env:GIT_CACHE)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "DNN_MODELS=$(ConvertTo-UnixPath $env:DNN_MODELS)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "BINARIES_CACHE=$(ConvertTo-UnixPath $env:BINARIES_CACHE)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "OPENCV_DOWNLOAD_PATH=$(ConvertTo-UnixPath $env:BINARIES_CACHE)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
