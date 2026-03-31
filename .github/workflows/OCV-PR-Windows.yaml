@@ -77,11 +77,21 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
     - name: Propagate environment
+      shell: bash
       run: |
-        echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
-        echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
-        echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
-        echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
+        git_cache_unix="/${GIT_CACHE:0:1}${GIT_CACHE:2}"
+        git_cache_unix="${git_cache_unix//\\//}"
+        
+        dnn_models_unix="/${DNN_MODELS:0:1}${DNN_MODELS:2}"
+        dnn_models_unix="${dnn_models_unix//\\//}"
+        
+        binaries_cache_unix="/${BINARIES_CACHE:0:1}${BINARIES_CACHE:2}"
+        binaries_cache_unix="${binaries_cache_unix//\\//}"
+        
+        echo "GIT_CACHE=${git_cache_unix,,}" >> "$GITHUB_ENV"
+        echo "DNN_MODELS=${dnn_models_unix,,}" >> "$GITHUB_ENV"
+        echo "BINARIES_CACHE=${binaries_cache_unix,,}" >> "$GITHUB_ENV"
+        echo "OPENCV_DOWNLOAD_PATH=${binaries_cache_unix,,}" >> "$GITHUB_ENV"
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
