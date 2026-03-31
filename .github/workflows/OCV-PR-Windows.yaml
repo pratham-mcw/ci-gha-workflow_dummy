@@ -63,7 +63,7 @@ jobs:
         branch: ${{ fromJSON(needs.branch_eval.outputs.branches )}}
     defaults:
       run:
-        shell: bash
+        shell: C:\Program Files\Git\bin\bash.exe {0}
     env:
       WARNINGS: 0
       CMAKE_OPT: >-
@@ -77,22 +77,16 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
     - name: Propagate environment
-      shell: C:\Program Files\Git\bin\bash.exe -e {0}
+      shell: pwsh
       run: |
-        # Convert Windows path to Git Bash format (C:\path -> /c/path)
-        git_cache_unix="/${GIT_CACHE:0:1}${GIT_CACHE:2}"
-        git_cache_unix="${git_cache_unix//\\//}"
+        function ConvertTo-UnixPath($Path) {
+          $Path -replace '\\', '/' -replace '^([A-Z]):', { "/$($_.Groups[1].Value.ToLower())" }
+        }
         
-        dnn_models_unix="/${DNN_MODELS:0:1}${DNN_MODELS:2}"
-        dnn_models_unix="${dnn_models_unix//\\//}"
-        
-        binaries_cache_unix="/${BINARIES_CACHE:0:1}${BINARIES_CACHE:2}"
-        binaries_cache_unix="${binaries_cache_unix//\\//}"
-        
-        echo "GIT_CACHE=${git_cache_unix,,}" >> "$GITHUB_ENV"
-        echo "DNN_MODELS=${dnn_models_unix,,}" >> "$GITHUB_ENV"
-        echo "BINARIES_CACHE=${binaries_cache_unix,,}" >> "$GITHUB_ENV"
-        echo "OPENCV_DOWNLOAD_PATH=${binaries_cache_unix,,}" >> "$GITHUB_ENV"
+        "GIT_CACHE=$(ConvertTo-UnixPath $env:GIT_CACHE)" >> $env:GITHUB_ENV
+        "DNN_MODELS=$(ConvertTo-UnixPath $env:DNN_MODELS)" >> $env:GITHUB_ENV
+        "BINARIES_CACHE=$(ConvertTo-UnixPath $env:BINARIES_CACHE)" >> $env:GITHUB_ENV
+        "OPENCV_DOWNLOAD_PATH=$(ConvertTo-UnixPath $env:BINARIES_CACHE)" >> $env:GITHUB_ENV
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
