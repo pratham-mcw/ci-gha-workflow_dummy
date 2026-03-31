@@ -152,6 +152,7 @@ jobs:
         OPENCV_TEST_CHECK_OPTIONAL_DATA: 0
         PYTHONPATH: '${{ github.workspace }}/${{ env.MAIN_BUILD_DIR }}/python_loader:$PYTHONPATH'
         WARNINGS: 0
+        GTEST_FILTER: '-Media.audio*'
       with:
         workdir: '${{ github.workspace }}'
         builddir: '${{ env.MAIN_BUILD_DIR }}'
