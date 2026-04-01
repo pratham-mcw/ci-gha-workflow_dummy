@@ -42,7 +42,7 @@ jobs:
             fi
 
   Windows:
-    runs-on: [self-hosted, Windows, ARM64]
+    runs-on: windows-11-arm
     needs:
       - branch_eval
     strategy:
