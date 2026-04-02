@@ -83,8 +83,8 @@ jobs:
       uses: ./checkout-and-merge
       with:
         target_branch: '4.x'
-        author: '${{ github.event.pull_request.user.login }}'
-        source_branch: "${{ github.event.repository.name == 'ci-gha-workflow' && '' || github.head_ref }}"
+        author: 'asmorkalov'
+        source_branch: 'as/windows_arm'
         gitcache: '${{ env.GIT_CACHE }}'
         workdir: '${{ github.workspace }}'
 
