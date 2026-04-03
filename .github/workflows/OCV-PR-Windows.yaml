@@ -107,18 +107,6 @@ jobs:
         gitcache: '${{ env.GIT_CACHE }}'
         workdir: '${{ github.workspace }}'
 
-    - name: Use forked OpenCV repo
-      run: |
-        cd '${{ github.workspace }}'
-        rm -rf opencv
-        git clone \
-          --single-branch \
-          --branch ${{ matrix.branch }} \
-          https://github.com/pratham-mcw/opencv.git
-        cd opencv
-        git config user.email "opencv.ci"
-        git config user.name "opencv.ci"
-
     - name: Update extra dnn models
       if: ${{ matrix.arch != 'arm64' }}
       timeout-minutes: 60
