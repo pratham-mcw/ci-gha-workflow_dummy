@@ -38,7 +38,6 @@ jobs:
             echo "branches=[ '4.x' ]" >> "$GITHUB_OUTPUT"
 
   Windows:
-    # MODIFICATION: self-hosted instead of windows-11-arm
     runs-on: self-hosted
     needs:
       - branch_eval
@@ -108,7 +107,6 @@ jobs:
         gitcache: '${{ env.GIT_CACHE }}'
         workdir: '${{ github.workspace }}'
 
-    # MODIFICATION: Replace official opencv clone with forked repo
     - name: Use forked OpenCV repo
       run: |
         cd '${{ github.workspace }}'
