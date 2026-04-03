@@ -66,8 +66,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: opencv/ci-gha-workflow
-        ref: 'main'
-
+        ref: "${{ github.repository == 'opencv/ci-gha-workflow' && github.ref || inputs.workflow_branch }}"
+  
     - run: |
         ls -l
         export
