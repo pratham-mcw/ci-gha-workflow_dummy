@@ -50,7 +50,7 @@ jobs:
         include:
           - arch: arm64
             config: base
-            vs: 'Visual Studio 17 2022'
+            vs: 'Visual Studio 18 2026'
             cmake_arch: ARM64
             no_opencl: true
 
