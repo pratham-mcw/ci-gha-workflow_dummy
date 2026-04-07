@@ -48,7 +48,7 @@ jobs:
         include:
           - arch: arm64
             config: base
-            runner: self-hosted
+            runner: windows-11-arm
             vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
@@ -154,21 +154,6 @@ jobs:
         echo "Float MaxValue: $([double]::MaxValue)"
 
         echo "=========================================="
-        echo "===== ENVIRONMENT VARIABLES ====="
-        echo "=========================================="
-        Get-ChildItem Env: | Sort-Object Name | Format-Table -AutoSize
-
-        echo "=========================================="
-        echo "===== VISUAL STUDIO / BUILD TOOLS ====="
-        echo "=========================================="
-        $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        if (Test-Path $vsWhere) {
-            & $vsWhere -all -format json
-        } else {
-            echo "vswhere not found at: $vsWhere"
-        }
-
-        echo "=========================================="
         echo "===== CMAKE INFO ====="
         echo "=========================================="
         cmake --version
@@ -184,24 +169,40 @@ jobs:
         echo "=========================================="
         git --version
 
+    - name: Detect core types via frequency under load
+      shell: pwsh
+      run: |
         echo "=========================================="
-        echo "===== NETWORK ====="
+        echo "===== CORE FREQUENCY ANALYSIS ====="
         echo "=========================================="
-        Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object Description, IPAddress, DefaultIPGateway | Format-List
-
-        echo "=========================================="
-        echo "===== RUNNING PROCESSES (Top 20) ====="
-        echo "=========================================="
-        Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 | Format-Table Name, CPU, WorkingSet -AutoSize
-
-        echo "=========================================="
-        echo "===== TEMP / WORKSPACE DIRS ====="
-        echo "=========================================="
-        echo "TEMP             = $env:TEMP"
-        echo "TMP              = $env:TMP"
-        echo "GITHUB_WORKSPACE = $env:GITHUB_WORKSPACE"
-        ls $env:GITHUB_WORKSPACE
-        ls C:\
+    
+        # Start background CPU load (uses all cores)
+        $job = Start-Job -ScriptBlock {
+            $end = (Get-Date).AddSeconds(15)
+            while ((Get-Date) -lt $end) {
+                1..100000 | ForEach-Object { [math]::Sqrt($_) } | Out-Null
+            }
+        }
+    
+        Start-Sleep -Seconds 2
+    
+        echo "Sampling frequencies..."
+    
+        for ($i = 0; $i -lt 10; $i++) {
+            $counters = Get-Counter '\Processor Information(*)\Processor Frequency'
+            
+            foreach ($sample in $counters.CounterSamples) {
+                $core = $sample.InstanceName
+                $freq = [int]$sample.CookedValue
+                echo "Core $core : $freq MHz"
+            }
+    
+            echo "-----------------------------------"
+            Start-Sleep -Milliseconds 500
+        }
+    
+        Wait-Job $job
+        Remove-Job $job
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
