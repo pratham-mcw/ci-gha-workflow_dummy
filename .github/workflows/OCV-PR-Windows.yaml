@@ -70,57 +70,35 @@ jobs:
 
     steps:
 
-    - name: Set runner CPU affinity to 4 cores (OS-level)
+    - name: Set runner CPU affinity to 4 cores
       shell: powershell
       run: |
-        $mask = 0xF  # cores 0-3
+        $mask = 0xF
     
-        # Target the Runner.Worker.exe process
-        $worker = Get-Process -Name "Runner.Worker" -ErrorAction SilentlyContinue
-        if ($worker) {
-          foreach ($proc in $worker) {
-            $proc.ProcessorAffinity = [IntPtr]$mask
-            Write-Host ("Set affinity on Runner.Worker.exe PID {0} to mask {1} (cores 0-3)" -f $proc.Id, $mask)
-          }
-        } else {
-          Write-Warning "Runner.Worker process not found — falling back to current process tree"
+        # Set on Runner.Worker (if exists)
+        Get-Process -Name "Runner.Worker" -ErrorAction SilentlyContinue | ForEach-Object {
+          $_.ProcessorAffinity = [IntPtr]$mask
         }
     
         # Set on current process
-        $current = Get-Process -Id $PID
-        $current.ProcessorAffinity = [IntPtr]$mask
-        Write-Host ("Set affinity on current process PID {0}" -f $PID)
+        (Get-Process -Id $PID).ProcessorAffinity = [IntPtr]$mask
     
-        # Walk up parent chain
+        # Set on parent chain
         $id = $PID
         while ($true) {
-          try {
-            $parent = (Get-CimInstance Win32_Process -Filter "ProcessId=$id").ParentProcessId
+          $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$id"
+          if (-not $proc) { break }
     
-            if (-not $parent -or $parent -eq 0 -or $parent -eq $id) {
-              break
-            }
+          $parent = $proc.ParentProcessId
+          if (-not $parent -or $parent -le 4 -or $parent -eq $id) { break }
     
-            $parentProc = Get-Process -Id $parent -ErrorAction SilentlyContinue
-            if (-not $parentProc) {
-              break
-            }
+          $parentProc = Get-Process -Id $parent -ErrorAction SilentlyContinue
+          if (-not $parentProc) { break }
     
-            # Stop at system processes
-            if ($parent -le 4) {
-              break
-            }
-    
-            $parentProc.ProcessorAffinity = [IntPtr]$mask
-            Write-Host ("Set affinity on {0} PID {1}" -f $parentProc.Name, $parent)
-    
-            $id = $parent
-          } catch {
-            break
-          }
+          $parentProc.ProcessorAffinity = [IntPtr]$mask
+          $id = $parent
         }
-    
-        Write-Host "Affinity enforcement complete. All runner processes restricted to cores 0-3."
+
     - name: Propagate environment
       run: |
         echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
