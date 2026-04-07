@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - '.github/workflows/OCV-PR-Windows.yaml'
-      # TODO: are following paths necessary?
       - 'checkout-and-merge/*'
       - 'configure-and-build/*'
       - 'run-tests/*'
@@ -34,11 +33,10 @@ jobs:
         - id: determine-branches
           shell: bash
           run: |
-            # MODIFICATION: hardcoded to 4.x only
             echo "branches=[ '4.x' ]" >> "$GITHUB_OUTPUT"
 
   Windows:
-    runs-on: self-hosted
+    runs-on: ${{ matrix.runner }}
     needs:
       - branch_eval
     strategy:
@@ -50,7 +48,8 @@ jobs:
         include:
           - arch: arm64
             config: base
-            vs: 'Visual Studio 18 2026'
+            runner: windows-11-arm
+            vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
 
@@ -78,6 +77,19 @@ jobs:
         echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
         echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
+
+    - name: Print system info
+      run: |
+        echo "===== CPU Info ====="
+        wmic cpu get name,numberofcores,numberoflogicalprocessors /format:list
+        echo "===== Memory Info ====="
+        wmic memorychip get capacity /format:list
+        echo "===== OS Info ====="
+        systeminfo | head -20
+        echo "===== Disk Info ====="
+        wmic logicaldisk get size,freespace,caption /format:list
+        echo "===== Architecture ====="
+        uname -m
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
