@@ -79,7 +79,7 @@ jobs:
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
     - name: Print full system info for diagnosis
-      shell: powershell
+      shell: pwsh
       run: |
         echo "=========================================="
         echo "===== BASIC OS & MACHINE INFO ====="
@@ -93,24 +93,37 @@ jobs:
         Get-CimInstance Win32_Processor | Format-List *
 
         echo "--- Process & OS Architecture ---"
-        echo "OS Arch      : $([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
-        echo "Process Arch : $([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)"
+        echo "OS Arch        : $([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+        echo "Process Arch   : $([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)"
+        echo "OS Description : $([System.Runtime.InteropServices.RuntimeInformation]::OSDescription)"
+        echo "Framework      : $([System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)"
 
         echo "=========================================="
         echo "===== ARM64 CPU FEATURE FLAGS ====="
         echo "=========================================="
-        echo "AdvSimd supported    : $([System.Runtime.Intrinsics.Arm.AdvSimd]::IsSupported)"
-        echo "AdvSimd.Arm64        : $([System.Runtime.Intrinsics.Arm.AdvSimd+Arm64]::IsSupported)"
-        echo "ArmBase supported    : $([System.Runtime.Intrinsics.Arm.ArmBase]::IsSupported)"
-        echo "ArmBase.Arm64        : $([System.Runtime.Intrinsics.Arm.ArmBase+Arm64]::IsSupported)"
-        echo "Aes supported        : $([System.Runtime.Intrinsics.Arm.Aes]::IsSupported)"
-        echo "Crc32 supported      : $([System.Runtime.Intrinsics.Arm.Crc32]::IsSupported)"
-        echo "Crc32.Arm64          : $([System.Runtime.Intrinsics.Arm.Crc32+Arm64]::IsSupported)"
-        echo "Dp (DotProd)         : $([System.Runtime.Intrinsics.Arm.Dp]::IsSupported)"
-        echo "Rdm supported        : $([System.Runtime.Intrinsics.Arm.Rdm]::IsSupported)"
-        echo "Sha1 supported       : $([System.Runtime.Intrinsics.Arm.Sha1]::IsSupported)"
-        echo "Sha256 supported     : $([System.Runtime.Intrinsics.Arm.Sha256]::IsSupported)"
-        echo "Sve supported        : $([System.Runtime.Intrinsics.Arm.Sve]::IsSupported)"
+        $intrinsics = @{
+            "AdvSimd"       = "System.Runtime.Intrinsics.Arm.AdvSimd"
+            "AdvSimd.Arm64" = "System.Runtime.Intrinsics.Arm.AdvSimd+Arm64"
+            "ArmBase"       = "System.Runtime.Intrinsics.Arm.ArmBase"
+            "ArmBase.Arm64" = "System.Runtime.Intrinsics.Arm.ArmBase+Arm64"
+            "Aes"           = "System.Runtime.Intrinsics.Arm.Aes"
+            "Crc32"         = "System.Runtime.Intrinsics.Arm.Crc32"
+            "Crc32.Arm64"   = "System.Runtime.Intrinsics.Arm.Crc32+Arm64"
+            "Dp (DotProd)"  = "System.Runtime.Intrinsics.Arm.Dp"
+            "Rdm"           = "System.Runtime.Intrinsics.Arm.Rdm"
+            "Sha1"          = "System.Runtime.Intrinsics.Arm.Sha1"
+            "Sha256"        = "System.Runtime.Intrinsics.Arm.Sha256"
+            "Sve"           = "System.Runtime.Intrinsics.Arm.Sve"
+        }
+        foreach ($name in $intrinsics.Keys) {
+            try {
+                $type = [Type]::GetType($intrinsics[$name], $true)
+                $supported = $type::IsSupported
+                echo "$name supported : $supported"
+            } catch {
+                echo "$name : NOT AVAILABLE on this runtime ($_)"
+            }
+        }
 
         echo "=========================================="
         echo "===== MEMORY DETAILS ====="
@@ -152,7 +165,7 @@ jobs:
         if (Test-Path $vsWhere) {
             & $vsWhere -all -format json
         } else {
-            echo "vswhere not found"
+            echo "vswhere not found at: $vsWhere"
         }
 
         echo "=========================================="
