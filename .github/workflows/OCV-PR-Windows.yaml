@@ -48,7 +48,7 @@ jobs:
         include:
           - arch: arm64
             config: base
-            runner: windows-11-arm
+            runner: self-hosted
             vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
@@ -168,7 +168,6 @@ jobs:
         echo "===== GIT INFO ====="
         echo "=========================================="
         git --version
-
     - name: Detect core types via frequency under load
       shell: pwsh
       run: |
@@ -203,7 +202,6 @@ jobs:
     
         Wait-Job $job
         Remove-Job $job
-
     - name: Checkout workflow repository
       uses: actions/checkout@v4
       with:
