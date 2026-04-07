@@ -82,6 +82,15 @@ jobs:
         echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
+    - name: Set CPU affinity to 4 cores
+      shell: pwsh
+      run: |
+        $mask = 0xF  # cores 0-3 only (bitmask: 1111)
+        $proc = Get-Process -Id $PID
+        $proc.ProcessorAffinity = [IntPtr]$mask
+        echo "CPU affinity mask set to: $mask (binary: $([Convert]::ToString($mask, 2)))"
+        echo "AFFINITY_MASK=$mask" >> $env:GITHUB_ENV
+
     - name: Checkout workflow repository
       uses: actions/checkout@v4
       with:
