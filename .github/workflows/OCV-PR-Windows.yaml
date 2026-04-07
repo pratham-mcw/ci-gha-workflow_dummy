@@ -78,6 +78,15 @@ jobs:
         echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
+    - name: Set CPU affinity to 4 cores
+      shell: pwsh
+      run: |
+        $mask = 0xF  # cores 0-3 only (bitmask: 1111)
+        $proc = Get-Process -Id $PID
+        $proc.ProcessorAffinity = [IntPtr]$mask
+        echo "CPU affinity mask set to: $mask (binary: $([Convert]::ToString($mask, 2)))"
+        echo "AFFINITY_MASK=$mask" >> $env:GITHUB_ENV
+
     - name: Print full system info for diagnosis
       shell: pwsh
       run: |
@@ -168,6 +177,7 @@ jobs:
         echo "===== GIT INFO ====="
         echo "=========================================="
         git --version
+
     - name: Detect core types via frequency under load
       shell: pwsh
       run: |
@@ -202,6 +212,7 @@ jobs:
     
         Wait-Job $job
         Remove-Job $job
+
     - name: Checkout workflow repository
       uses: actions/checkout@v4
       with:
@@ -242,20 +253,14 @@ jobs:
 
     - if: ${{ github.event.repository.name != 'opencv_contrib' }}
       name: Configure and build OpenCV
-      uses: ./configure-and-build
-      with:
-        workdir: '${{ github.workspace }}'
-        builddir: 'build'
-        generator: '${{ matrix.vs }}'
-        options: '-A ${{ matrix.cmake_arch }} ${{ env.CMAKE_OPT }}'
+      shell: pwsh
+      run: |
+        cmd /c "start /AFFINITY F /wait cmake --build build --config Release"
 
     - name: Configure and build OpenCV with contrib
-      uses: ./configure-and-build
-      with:
-        workdir: '${{ github.workspace }}'
-        builddir: 'build-contrib'
-        generator: '${{ matrix.vs }}'
-        options: '-A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release -DOPENCV_EXTRA_MODULES_PATH=opencv_contrib/modules ${{ env.CMAKE_OPT }}'
+      shell: pwsh
+      run: |
+        cmd /c "start /AFFINITY F /wait cmake --build build-contrib --config Release"
 
     - name: Run OpenCV tests
       uses: ./run-tests
