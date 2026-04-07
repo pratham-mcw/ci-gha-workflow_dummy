@@ -30,13 +30,13 @@ jobs:
     outputs:
       branches: ${{ steps.determine-branches.outputs.branches }}
     steps:
-        - id: determine-branches
-          shell: bash
-          run: |
-            echo "branches=[ '4.x' ]" >> "$GITHUB_OUTPUT"
+      - id: determine-branches
+        shell: bash
+        run: |
+          echo "branches=[ '4.x' ]" >> "$GITHUB_OUTPUT"
 
   Windows:
-    runs-on: self-hosted
+    runs-on: ${{ matrix.runner }}
     needs:
       - branch_eval
     strategy:
@@ -48,11 +48,11 @@ jobs:
         include:
           - arch: arm64
             config: base
+            runner: windows-11-arm
             vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
-
-        branch: ${{ fromJSON(needs.branch_eval.outputs.branches )}}
+        branch: ${{ fromJSON(needs.branch_eval.outputs.branches) }}
     defaults:
       run:
         shell: bash
@@ -71,20 +71,21 @@ jobs:
     steps:
 
     - name: Propagate environment
+      if: ${{ env.GIT_CACHE != '' }}
       run: |
         echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
         echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
         echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
-    - name: Print system info
-      shell: pwsh
+    - name: Print full system info for diagnosis
+      shell: powershell
       run: |
         echo "=========================================="
         echo "===== BASIC OS & MACHINE INFO ====="
         echo "=========================================="
-        Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture, BuildNumber, ServicePackMajorVersion | Format-List
-        Get-CimInstance Win32_ComputerSystem | Select-Object Manufacturer, Model, SystemType, NumberOfProcessors, NumberOfLogicalProcessors, TotalPhysicalMemory | Format-List
+        Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture, BuildNumber | Format-List
+        Get-CimInstance Win32_ComputerSystem  | Select-Object Manufacturer, Model, SystemType, NumberOfProcessors, NumberOfLogicalProcessors, TotalPhysicalMemory | Format-List
 
         echo "=========================================="
         echo "===== CPU DETAILED INFO ====="
@@ -98,40 +99,39 @@ jobs:
         echo "Framework      : $([System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)"
 
         echo "=========================================="
-        echo "===== ARM64 CPU FEATURE FLAGS ====="
+        echo "===== ARM64 CPU FEATURE FLAGS (Win32 API) ====="
         echo "=========================================="
-        $armTypes = @(
-          'System.Runtime.Intrinsics.Arm.ArmBase',
-          'System.Runtime.Intrinsics.Arm.AdvSimd',
-          'System.Runtime.Intrinsics.Arm.Aes',
-          'System.Runtime.Intrinsics.Arm.Crc32',
-          'System.Runtime.Intrinsics.Arm.Dp',
-          'System.Runtime.Intrinsics.Arm.Rdm',
-          'System.Runtime.Intrinsics.Arm.Sha1',
-          'System.Runtime.Intrinsics.Arm.Sha256',
-          'System.Runtime.Intrinsics.Arm.Sve'
-        )
-        foreach ($typeName in $armTypes) {
-          try {
-            $type = [System.Type]::GetType("$typeName, System.Private.CoreLib", $true)
-            $supported = $type::IsSupported
-            echo "$typeName supported : $supported"
-          } catch {
-            echo "$typeName : NOT AVAILABLE on this runtime (Exception: $_)"
-          }
+        Add-Type -TypeDefinition @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class CpuFeatures {
+            [DllImport("kernel32.dll")]
+            public static extern bool IsProcessorFeaturePresent(uint processorFeature);
+
+            public const uint PF_ARM_NEON_INSTRUCTIONS_AVAILABLE      = 19;
+            public const uint PF_ARM_V8_INSTRUCTIONS_AVAILABLE        = 29;
+            public const uint PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE = 30;
+            public const uint PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE  = 31;
+            public const uint PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE = 34;
+            public const uint PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE    = 43;
+            public const uint PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE = 44;
+            public const uint PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE = 45;
         }
-        try {
-          $t64 = [System.Type]::GetType('System.Runtime.Intrinsics.Arm.ArmBase+Arm64, System.Private.CoreLib', $true)
-          echo "ArmBase.Arm64 supported : $($t64::IsSupported)"
-        } catch { echo "ArmBase.Arm64 : NOT AVAILABLE" }
-        try {
-          $t64 = [System.Type]::GetType('System.Runtime.Intrinsics.Arm.AdvSimd+Arm64, System.Private.CoreLib', $true)
-          echo "AdvSimd.Arm64 supported : $($t64::IsSupported)"
-        } catch { echo "AdvSimd.Arm64 : NOT AVAILABLE" }
-        try {
-          $t64 = [System.Type]::GetType('System.Runtime.Intrinsics.Arm.Crc32+Arm64, System.Private.CoreLib', $true)
-          echo "Crc32.Arm64 supported : $($t64::IsSupported)"
-        } catch { echo "Crc32.Arm64 : NOT AVAILABLE" }
+"@
+        $features = @(
+            @{ Name = "NEON (AdvSimd)";  Code = [CpuFeatures]::PF_ARM_NEON_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "ARMv8 base";      Code = [CpuFeatures]::PF_ARM_V8_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "AES/SHA crypto";  Code = [CpuFeatures]::PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "CRC32";           Code = [CpuFeatures]::PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "Atomics (LSE)";   Code = [CpuFeatures]::PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "DotProd (I8MM)";  Code = [CpuFeatures]::PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "JSCVT";           Code = [CpuFeatures]::PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE },
+            @{ Name = "LRCPC";           Code = [CpuFeatures]::PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE }
+        )
+        foreach ($f in $features) {
+            $result = [CpuFeatures]::IsProcessorFeaturePresent($f.Code)
+            echo "$($f.Name) : $result"
+        }
 
         echo "=========================================="
         echo "===== MEMORY DETAILS ====="
@@ -146,18 +146,15 @@ jobs:
         echo "=========================================="
         echo "===== DISK INFO ====="
         echo "=========================================="
-        Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Used -ne $null } |
-          Select-Object @{N='DeviceID';E={$_.Name+':'}},
-                        @{N='Size(GB)';E={[math]::Round(($_.Used+$_.Free)/1GB,2)}},
-                        @{N='Free(GB)';E={[math]::Round($_.Free/1GB,2)}},
-                        @{N='FileSystem';E={(Get-CimInstance -Query "SELECT FileSystem FROM Win32_LogicalDisk WHERE DeviceID='$($_.Name):'").FileSystem}},
-                        @{N='VolumeName';E={(Get-CimInstance -Query "SELECT VolumeName FROM Win32_LogicalDisk WHERE DeviceID='$($_.Name):'").VolumeName}} |
-          Format-Table -AutoSize
+        Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,
+          @{N='Size(GB)';E={[math]::Round($_.Size/1GB,2)}},
+          @{N='Free(GB)';E={[math]::Round($_.FreeSpace/1GB,2)}},
+          FileSystem, VolumeName | Format-Table -AutoSize
 
         echo "=========================================="
         echo "===== FLOATING POINT BEHAVIOR ====="
         echo "=========================================="
-        echo "1.0/3.0 = $([double]1.0/[double]3.0)"
+        echo "1.0/3.0 = $([double]1.0 / [double]3.0)"
         echo "Float epsilon : $([double]::Epsilon)"
         echo "Float MaxValue: $([double]::MaxValue)"
 
@@ -171,38 +168,38 @@ jobs:
         echo "=========================================="
         $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
         if (Test-Path $vsWhere) {
-          & $vsWhere -all -format json | ConvertFrom-Json | ConvertTo-Json -Depth 5
+            & $vsWhere -all -format json
         } else {
-          echo "vswhere.exe not found"
+            echo "vswhere not found at: $vsWhere"
         }
 
         echo "=========================================="
         echo "===== CMAKE INFO ====="
         echo "=========================================="
-        cmake --version 2>&1 || echo "cmake not found"
+        try { cmake --version } catch { echo "cmake not found" }
 
         echo "=========================================="
         echo "===== PYTHON INFO ====="
         echo "=========================================="
-        python --version 2>&1 || echo "python not found"
-        python -c "import platform; print(platform.machine())" 2>&1 || true
-        python -c "import platform; print(platform.processor())" 2>&1 || true
+        try { python --version } catch { echo "python not found" }
+        try { python -c "import platform; print(platform.machine()); print(platform.processor())" } catch {}
 
         echo "=========================================="
         echo "===== GIT INFO ====="
         echo "=========================================="
-        git --version 2>&1 || echo "git not found"
+        try { git --version } catch { echo "git not found" }
 
         echo "=========================================="
         echo "===== NETWORK ====="
         echo "=========================================="
-        Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPAddress -ne $null } |
+        Get-CimInstance Win32_NetworkAdapterConfiguration |
+          Where-Object { $_.IPAddress -ne $null } |
           Select-Object Description, IPAddress, DefaultIPGateway | Format-List
 
         echo "=========================================="
         echo "===== RUNNING PROCESSES (Top 20) ====="
         echo "=========================================="
-        Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 Name, CPU, WorkingSet | Format-Table -AutoSize
+        Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 | Format-Table Name, CPU, WorkingSet -AutoSize
 
         echo "=========================================="
         echo "===== TEMP / WORKSPACE DIRS ====="
@@ -210,6 +207,7 @@ jobs:
         echo "TEMP             = $env:TEMP"
         echo "TMP              = $env:TMP"
         echo "GITHUB_WORKSPACE = $env:GITHUB_WORKSPACE"
+        Get-ChildItem $env:GITHUB_WORKSPACE -ErrorAction SilentlyContinue | Format-Table -AutoSize
         Get-ChildItem C:\ | Format-Table -AutoSize
 
     - name: Checkout workflow repository
@@ -280,7 +278,7 @@ jobs:
         builddir: '${{ env.MAIN_BUILD_DIR }}'
         logdir: '${{ github.workspace }}'
         plan: "test-plan-win-${{ matrix.branch }}.json"
-        suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib'''  || '''main''' }} ]"
+        suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib''' || '''main''' }} ]"
         enable_python: "false"
         enable_java: "false"
         filter: "[ 'windows-common' ]"
