@@ -48,7 +48,7 @@ jobs:
         include:
           - arch: arm64
             config: base
-            runs-on: self-hosted
+            runner: self-hosted
             vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
