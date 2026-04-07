@@ -30,10 +30,10 @@ jobs:
     outputs:
       branches: ${{ steps.determine-branches.outputs.branches }}
     steps:
-        - id: determine-branches
-          shell: bash
-          run: |
-            echo "branches=[ '4.x' ]" >> "$GITHUB_OUTPUT"
+      - id: determine-branches
+        shell: bash
+        run: |
+          echo "branches=[ '4.x' ]" >> "$GITHUB_OUTPUT"
 
   Windows:
     runs-on: ${{ matrix.runner }}
@@ -52,8 +52,7 @@ jobs:
             vs: 'Visual Studio 17 2022'
             cmake_arch: ARM64
             no_opencl: true
-
-        branch: ${{ fromJSON(needs.branch_eval.outputs.branches )}}
+        branch: ${{ fromJSON(needs.branch_eval.outputs.branches) }}
     defaults:
       run:
         shell: bash
@@ -72,24 +71,124 @@ jobs:
     steps:
 
     - name: Propagate environment
+      if: ${{ env.GIT_CACHE != '' }}
       run: |
         echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
         echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
         echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
 
-    - name: Print system info
+    - name: Print full system info for diagnosis
+      shell: powershell
       run: |
-        echo "===== CPU Info ====="
-        wmic cpu get name,numberofcores,numberoflogicalprocessors /format:list
-        echo "===== Memory Info ====="
-        wmic memorychip get capacity /format:list
-        echo "===== OS Info ====="
-        systeminfo | head -20
-        echo "===== Disk Info ====="
-        wmic logicaldisk get size,freespace,caption /format:list
-        echo "===== Architecture ====="
-        uname -m
+        echo "=========================================="
+        echo "===== BASIC OS & MACHINE INFO ====="
+        echo "=========================================="
+        Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture, BuildNumber, ServicePackMajorVersion | Format-List
+        Get-CimInstance Win32_ComputerSystem  | Select-Object Manufacturer, Model, SystemType, NumberOfProcessors, NumberOfLogicalProcessors, TotalPhysicalMemory | Format-List
+
+        echo "=========================================="
+        echo "===== CPU DETAILED INFO ====="
+        echo "=========================================="
+        Get-CimInstance Win32_Processor | Format-List *
+
+        echo "--- Process & OS Architecture ---"
+        echo "OS Arch      : $([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+        echo "Process Arch : $([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)"
+
+        echo "=========================================="
+        echo "===== ARM64 CPU FEATURE FLAGS ====="
+        echo "=========================================="
+        echo "AdvSimd supported    : $([System.Runtime.Intrinsics.Arm.AdvSimd]::IsSupported)"
+        echo "AdvSimd.Arm64        : $([System.Runtime.Intrinsics.Arm.AdvSimd+Arm64]::IsSupported)"
+        echo "ArmBase supported    : $([System.Runtime.Intrinsics.Arm.ArmBase]::IsSupported)"
+        echo "ArmBase.Arm64        : $([System.Runtime.Intrinsics.Arm.ArmBase+Arm64]::IsSupported)"
+        echo "Aes supported        : $([System.Runtime.Intrinsics.Arm.Aes]::IsSupported)"
+        echo "Crc32 supported      : $([System.Runtime.Intrinsics.Arm.Crc32]::IsSupported)"
+        echo "Crc32.Arm64          : $([System.Runtime.Intrinsics.Arm.Crc32+Arm64]::IsSupported)"
+        echo "Dp (DotProd)         : $([System.Runtime.Intrinsics.Arm.Dp]::IsSupported)"
+        echo "Rdm supported        : $([System.Runtime.Intrinsics.Arm.Rdm]::IsSupported)"
+        echo "Sha1 supported       : $([System.Runtime.Intrinsics.Arm.Sha1]::IsSupported)"
+        echo "Sha256 supported     : $([System.Runtime.Intrinsics.Arm.Sha256]::IsSupported)"
+        echo "Sve supported        : $([System.Runtime.Intrinsics.Arm.Sve]::IsSupported)"
+
+        echo "=========================================="
+        echo "===== MEMORY DETAILS ====="
+        echo "=========================================="
+        $os = Get-CimInstance Win32_OperatingSystem
+        echo "Total Physical RAM : $([math]::Round($os.TotalVisibleMemorySize/1MB, 2)) GB"
+        echo "Free Physical RAM  : $([math]::Round($os.FreePhysicalMemory/1MB, 2)) GB"
+        echo "Total Virtual Mem  : $([math]::Round($os.TotalVirtualMemorySize/1MB, 2)) GB"
+        echo "Free Virtual Mem   : $([math]::Round($os.FreeVirtualMemory/1MB, 2)) GB"
+        Get-CimInstance Win32_PhysicalMemory | Select-Object BankLabel, Capacity, Speed, MemoryType | Format-List
+
+        echo "=========================================="
+        echo "===== DISK INFO ====="
+        echo "=========================================="
+        Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID, `
+          @{N='Size(GB)';E={[math]::Round($_.Size/1GB,2)}}, `
+          @{N='Free(GB)';E={[math]::Round($_.FreeSpace/1GB,2)}}, `
+          FileSystem, VolumeName | Format-Table -AutoSize
+
+        echo "=========================================="
+        echo "===== FLOATING POINT BEHAVIOR ====="
+        echo "=========================================="
+        $a = [double]1.0
+        $b = [double]3.0
+        $result = $a / $b
+        echo "1.0/3.0 = $result"
+        echo "Float epsilon : $([double]::Epsilon)"
+        echo "Float MaxValue: $([double]::MaxValue)"
+
+        echo "=========================================="
+        echo "===== ENVIRONMENT VARIABLES ====="
+        echo "=========================================="
+        Get-ChildItem Env: | Sort-Object Name | Format-Table -AutoSize
+
+        echo "=========================================="
+        echo "===== VISUAL STUDIO / BUILD TOOLS ====="
+        echo "=========================================="
+        $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        if (Test-Path $vsWhere) {
+            & $vsWhere -all -format json
+        } else {
+            echo "vswhere not found"
+        }
+
+        echo "=========================================="
+        echo "===== CMAKE INFO ====="
+        echo "=========================================="
+        cmake --version
+
+        echo "=========================================="
+        echo "===== PYTHON INFO ====="
+        echo "=========================================="
+        python --version
+        python -c "import platform; print(platform.machine()); print(platform.processor())"
+
+        echo "=========================================="
+        echo "===== GIT INFO ====="
+        echo "=========================================="
+        git --version
+
+        echo "=========================================="
+        echo "===== NETWORK ====="
+        echo "=========================================="
+        Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled } | Select-Object Description, IPAddress, DefaultIPGateway | Format-List
+
+        echo "=========================================="
+        echo "===== RUNNING PROCESSES (Top 20) ====="
+        echo "=========================================="
+        Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 | Format-Table Name, CPU, WorkingSet -AutoSize
+
+        echo "=========================================="
+        echo "===== TEMP / WORKSPACE DIRS ====="
+        echo "=========================================="
+        echo "TEMP             = $env:TEMP"
+        echo "TMP              = $env:TMP"
+        echo "GITHUB_WORKSPACE = $env:GITHUB_WORKSPACE"
+        ls $env:GITHUB_WORKSPACE
+        ls C:\
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
@@ -159,7 +258,7 @@ jobs:
         builddir: '${{ env.MAIN_BUILD_DIR }}'
         logdir: '${{ github.workspace }}'
         plan: "test-plan-win-${{ matrix.branch }}.json"
-        suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib'''  || '''main''' }} ]"
+        suite: "[ ${{ (github.event.repository.name == 'opencv_contrib') && '''contrib''' || '''main''' }} ]"
         enable_python: "false"
         enable_java: "false"
         filter: "[ 'windows-common' ]"
