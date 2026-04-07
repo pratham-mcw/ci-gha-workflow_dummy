@@ -65,153 +65,22 @@ jobs:
         ${{ matrix.no_opencl && '-DWITH_OPENCL=OFF' || '' }}
         ${{ matrix.arch == 'x86' && '-DBUILD_opencv_python3=OFF' || '' }}
       MAIN_BUILD_DIR: "${{ (github.event.repository.name != 'opencv_contrib') && 'build' || 'build-contrib' }}"
-      OPENCV_FOR_THREADS_NUM: 8
-      CMAKE_BUILD_PARALLEL_LEVEL: 8
+      OPENCV_FOR_THREADS_NUM: 4
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
 
     steps:
 
     - name: Propagate environment
-      if: ${{ env.GIT_CACHE != '' }}
       run: |
-        echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
+        # Guard against GIT_CACHE pointing to a non-repository path (e.g. Git install dir)
+        if [ -n "$GIT_CACHE" ] && [ -d "$GIT_CACHE" ] && git -C "$GIT_CACHE" rev-parse --git-dir > /dev/null 2>&1; then
+          echo "GIT_CACHE=$(cygpath -u "$GIT_CACHE")" >> "$GITHUB_ENV"
+        else
+          echo "GIT_CACHE=" >> "$GITHUB_ENV"
+        fi
         echo "DNN_MODELS=$(cygpath -u "$DNN_MODELS")" >> "$GITHUB_ENV"
         echo "BINARIES_CACHE=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
         echo "OPENCV_DOWNLOAD_PATH=$(cygpath -u "$BINARIES_CACHE")" >> "$GITHUB_ENV"
-
-    - name: Set CPU affinity to 4 cores
-      shell: pwsh
-      run: |
-        $mask = 0xF  # cores 0-3 only (bitmask: 1111)
-        $proc = Get-Process -Id $PID
-        $proc.ProcessorAffinity = [IntPtr]$mask
-        echo "CPU affinity mask set to: $mask (binary: $([Convert]::ToString($mask, 2)))"
-        echo "AFFINITY_MASK=$mask" >> $env:GITHUB_ENV
-
-    - name: Print full system info for diagnosis
-      shell: pwsh
-      run: |
-        echo "=========================================="
-        echo "===== BASIC OS & MACHINE INFO ====="
-        echo "=========================================="
-        Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture, BuildNumber, ServicePackMajorVersion | Format-List
-        Get-CimInstance Win32_ComputerSystem  | Select-Object Manufacturer, Model, SystemType, NumberOfProcessors, NumberOfLogicalProcessors, TotalPhysicalMemory | Format-List
-
-        echo "=========================================="
-        echo "===== CPU DETAILED INFO ====="
-        echo "=========================================="
-        Get-CimInstance Win32_Processor | Format-List *
-
-        echo "--- Process & OS Architecture ---"
-        echo "OS Arch        : $([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
-        echo "Process Arch   : $([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)"
-        echo "OS Description : $([System.Runtime.InteropServices.RuntimeInformation]::OSDescription)"
-        echo "Framework      : $([System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)"
-
-        echo "=========================================="
-        echo "===== ARM64 CPU FEATURE FLAGS ====="
-        echo "=========================================="
-        $intrinsics = @{
-            "AdvSimd"       = "System.Runtime.Intrinsics.Arm.AdvSimd"
-            "AdvSimd.Arm64" = "System.Runtime.Intrinsics.Arm.AdvSimd+Arm64"
-            "ArmBase"       = "System.Runtime.Intrinsics.Arm.ArmBase"
-            "ArmBase.Arm64" = "System.Runtime.Intrinsics.Arm.ArmBase+Arm64"
-            "Aes"           = "System.Runtime.Intrinsics.Arm.Aes"
-            "Crc32"         = "System.Runtime.Intrinsics.Arm.Crc32"
-            "Crc32.Arm64"   = "System.Runtime.Intrinsics.Arm.Crc32+Arm64"
-            "Dp (DotProd)"  = "System.Runtime.Intrinsics.Arm.Dp"
-            "Rdm"           = "System.Runtime.Intrinsics.Arm.Rdm"
-            "Sha1"          = "System.Runtime.Intrinsics.Arm.Sha1"
-            "Sha256"        = "System.Runtime.Intrinsics.Arm.Sha256"
-            "Sve"           = "System.Runtime.Intrinsics.Arm.Sve"
-        }
-        foreach ($name in $intrinsics.Keys) {
-            try {
-                $type = [Type]::GetType($intrinsics[$name], $true)
-                $supported = $type::IsSupported
-                echo "$name supported : $supported"
-            } catch {
-                echo "$name : NOT AVAILABLE on this runtime ($_)"
-            }
-        }
-
-        echo "=========================================="
-        echo "===== MEMORY DETAILS ====="
-        echo "=========================================="
-        $os = Get-CimInstance Win32_OperatingSystem
-        echo "Total Physical RAM : $([math]::Round($os.TotalVisibleMemorySize/1MB, 2)) GB"
-        echo "Free Physical RAM  : $([math]::Round($os.FreePhysicalMemory/1MB, 2)) GB"
-        echo "Total Virtual Mem  : $([math]::Round($os.TotalVirtualMemorySize/1MB, 2)) GB"
-        echo "Free Virtual Mem   : $([math]::Round($os.FreeVirtualMemory/1MB, 2)) GB"
-        Get-CimInstance Win32_PhysicalMemory | Select-Object BankLabel, Capacity, Speed, MemoryType | Format-List
-
-        echo "=========================================="
-        echo "===== DISK INFO ====="
-        echo "=========================================="
-        Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID, `
-          @{N='Size(GB)';E={[math]::Round($_.Size/1GB,2)}}, `
-          @{N='Free(GB)';E={[math]::Round($_.FreeSpace/1GB,2)}}, `
-          FileSystem, VolumeName | Format-Table -AutoSize
-
-        echo "=========================================="
-        echo "===== FLOATING POINT BEHAVIOR ====="
-        echo "=========================================="
-        $a = [double]1.0
-        $b = [double]3.0
-        $result = $a / $b
-        echo "1.0/3.0 = $result"
-        echo "Float epsilon : $([double]::Epsilon)"
-        echo "Float MaxValue: $([double]::MaxValue)"
-
-        echo "=========================================="
-        echo "===== CMAKE INFO ====="
-        echo "=========================================="
-        cmake --version
-
-        echo "=========================================="
-        echo "===== PYTHON INFO ====="
-        echo "=========================================="
-        python --version
-        python -c "import platform; print(platform.machine()); print(platform.processor())"
-
-        echo "=========================================="
-        echo "===== GIT INFO ====="
-        echo "=========================================="
-        git --version
-
-    - name: Detect core types via frequency under load
-      shell: pwsh
-      run: |
-        echo "=========================================="
-        echo "===== CORE FREQUENCY ANALYSIS ====="
-        echo "=========================================="
-    
-        # Start background CPU load (uses all cores)
-        $job = Start-Job -ScriptBlock {
-            $end = (Get-Date).AddSeconds(15)
-            while ((Get-Date) -lt $end) {
-                1..100000 | ForEach-Object { [math]::Sqrt($_) } | Out-Null
-            }
-        }
-    
-        Start-Sleep -Seconds 2
-    
-        echo "Sampling frequencies..."
-    
-        for ($i = 0; $i -lt 10; $i++) {
-            $counters = Get-Counter '\Processor Information(*)\Processor Frequency'
-            
-            foreach ($sample in $counters.CounterSamples) {
-                $core = $sample.InstanceName
-                $freq = [int]$sample.CookedValue
-                echo "Core $core : $freq MHz"
-            }
-    
-            echo "-----------------------------------"
-            Start-Sleep -Milliseconds 500
-        }
-    
-        Wait-Job $job
-        Remove-Job $job
 
     - name: Checkout workflow repository
       uses: actions/checkout@v4
